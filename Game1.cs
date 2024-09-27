@@ -31,7 +31,6 @@ namespace WinformMonoGame
         private BasicEffect basicEffect;
         private SpriteBatch spriteBatch;
         RenderTarget2D renderTarget;
-        Texture2D polygonTexture;
 
         private Vector2 posOffset;
         private double scale = 0.1;
@@ -80,8 +79,15 @@ namespace WinformMonoGame
             basicEffect.VertexColorEnabled = true;
 
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            renderTarget = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            polygonTexture = new Texture2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            //renderTarget = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            renderTarget = new RenderTarget2D(
+                GraphicsDevice,
+                Window.ClientBounds.Width, // 원하는 너비
+                Window.ClientBounds.Height, // 원하는 높이
+                false, // mipMap 사용 여부
+                SurfaceFormat.Color,
+                DepthFormat.Depth24 // 깊이 버퍼 형식
+            );
         }
 
         protected override void Update(GameTime gameTime)
@@ -124,12 +130,35 @@ namespace WinformMonoGame
                 0, 1
             );
 
-            Stopwatch stopwatch = new Stopwatch();
+            drawingVertices.Clear();
+            Texture2D texture = new Texture2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
 
-            if (needUpdate)
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Start();
+            //stopwatch.Stop();
+            //System.Windows.Forms.MessageBox.Show($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+
+            bool isDraw = false;
+            for(int i = 0; i < layers.Count; i++)
             {
+                if (layers[i].isDraw)
+                {
+                    isDraw = true;
+                    break;
+                }
+            }
+
+            if (isDraw)
+            {
+                GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Blue, 1.0f, 0);
                 GraphicsDevice.SetRenderTarget(renderTarget);
-                GraphicsDevice.Clear(Color.Black);
+
+                GraphicsDevice.DepthStencilState = DepthStencilState.Default; // 깊이 버퍼 초기화
+                GraphicsDevice.DepthStencilState = new DepthStencilState
+                {
+                    DepthBufferEnable = true,  // 깊이 버퍼 사용
+                    StencilEnable = false
+                };
 
                 drawingVertices.Clear();
 
@@ -141,39 +170,34 @@ namespace WinformMonoGame
                         {
                             double x = (double)layers[i].triangleVertices[j].Position.X * scale + (double)posOffset.X;
                             double y = (double)layers[i].triangleVertices[j].Position.Y * scale + (double)posOffset.Y;
-                            drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, 0), layers[i].triangleVertices[j].Color));
+                            drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, layers[i].triangleVertices[j].Position.Z), layers[i].triangleVertices[j].Color));
                         }
                     }
                 }
 
-                // Temp time check
-                stopwatch.Start();
-
-                spriteBatch.Begin();
-
-                if(drawingVertices.Count > 0)
+                if (drawingVertices.Count > 0)
                 {
+                    spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+
                     foreach (var pass in basicEffect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
                         GraphicsDevice.DrawUserPrimitives(Microsoft.Xna.Framework.Graphics.PrimitiveType.TriangleList, drawingVertices.ToArray(), 0, drawingVertices.Count / 3);
                     }
+                    spriteBatch.End();
+
                 }
-                spriteBatch.End();
 
-                stopwatch.Stop();
-                //System.Windows.Forms.MessageBox.Show($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
-
-                polygonTexture = renderTarget;
+                texture = renderTarget;
                 GraphicsDevice.SetRenderTarget(null);
-                needUpdate = false;
             }
 
             // 화면을 지우고 렌더 타겟에서 그린 텍스처를 출력합니다.
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Blue, 1.0f, 0);
 
-            spriteBatch.Begin();
-            spriteBatch.Draw(polygonTexture, Vector2.Zero, Color.White);
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+
+            spriteBatch.Draw(texture, Vector2.Zero, Color.White);
             //spriteBatch.Draw(polygonTexture, posOffset, null, Color.White, 0f, Vector2.Zero, new Vector2((float)drawScale, (float)drawScale), SpriteEffects.None, 0f);
             spriteBatch.End();
 

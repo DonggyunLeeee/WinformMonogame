@@ -81,12 +81,24 @@ namespace WinformMonoGame
                     var polyline = new Polygon(points);
                     P2T.Triangulate(polyline);
 
-                    Microsoft.Xna.Framework.Color gray = (layer_points.point_index[i].polarity == 'P') ? Microsoft.Xna.Framework.Color.White : Microsoft.Xna.Framework.Color.Black;
+                    Microsoft.Xna.Framework.Color gray;
+                    float Z;
+                    if (layer_points.point_index[i].polarity == 'P')
+                    {
+                        gray = Microsoft.Xna.Framework.Color.White;
+                        Z = 0.0f;
+                    }
+                    else
+                    {
+                        gray = Microsoft.Xna.Framework.Color.Red;
+                        Z = 0.0f;
+                    }
+
                     foreach (var triangle in polyline.Triangles)
                     {
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[2].X, (float)-triangle.Points[2].Y, 0), gray));
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[1].X, (float)-triangle.Points[1].Y, 0), gray));
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[0].X, (float)-triangle.Points[0].Y, 0), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[2].X, (float)-triangle.Points[2].Y, Z), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[1].X, (float)-triangle.Points[1].Y, Z), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[0].X, (float)-triangle.Points[0].Y, Z), gray));
                     }
                 }
 
