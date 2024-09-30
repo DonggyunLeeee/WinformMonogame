@@ -140,6 +140,7 @@
     </Compile>
     <Compile Include="Game1.cs" />
     <Compile Include="Layer_Points.cs" />
+    <Compile Include="Clipper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Form1.resx">

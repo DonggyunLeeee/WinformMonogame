@@ -36,18 +36,17 @@ namespace WinformMonoGame
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(112, 10);
+            this.pictureBox1.Location = new System.Drawing.Point(210, 10);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(968, 607);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pictureBox1.Size = new System.Drawing.Size(870, 607);
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.PictureBox1_MouseWheel);
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(10, 10);
+            this.button1.Location = new System.Drawing.Point(12, 35);
             this.button1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(93, 28);
@@ -69,7 +68,6 @@ namespace WinformMonoGame
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 

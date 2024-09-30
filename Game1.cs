@@ -16,6 +16,9 @@ namespace WinformMonoGame
     {
         public List<VertexPositionColor> triangleVertices;
         public bool isDraw;
+        public Color foreColor;
+        public Texture2D texture;
+        public int transparency;
 
         public LayerInfo()
         {
@@ -36,8 +39,6 @@ namespace WinformMonoGame
         private double scale = 0.1;
         private bool isDragging = false;
         private Vector2 prevmousePosition;
-
-        public bool needUpdate;
 
         public List<LayerInfo> layers;
 
@@ -70,7 +71,6 @@ namespace WinformMonoGame
             drawingVertices = new List<VertexPositionColor>();
             posOffset = Vector2.Zero; // 폴리곤의 위치
             layers = new List<LayerInfo>();
-            needUpdate = false;
         }
 
         protected override void LoadContent()
@@ -104,14 +104,12 @@ namespace WinformMonoGame
                 scale *= scaleChange;
                 posOffset = mousePosition - centerToMouse * (float)scaleChange;
                 mouse_delta = 0;
-                needUpdate = true;
             }
 
             //if (mouse_move && mouse_left_clicked)
             //{
             //    posOffset += (mousePosition - prevmousePosition);
             //    prevmousePosition = mousePosition;
-            //    needUpdate = true;
             //}
             //else if (mouse_left_clicked)
             //{
@@ -130,55 +128,27 @@ namespace WinformMonoGame
                 0, 1
             );
 
-            drawingVertices.Clear();
-            Texture2D texture = new Texture2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
-
             //Stopwatch stopwatch = new Stopwatch();
             //stopwatch.Start();
             //stopwatch.Stop();
             //System.Windows.Forms.MessageBox.Show($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
 
-            bool isDraw = false;
-            for(int i = 0; i < layers.Count; i++)
+            for (int i = 0; i < layers.Count; i++)
             {
                 if (layers[i].isDraw)
                 {
-                    isDraw = true;
-                    break;
-                }
-            }
-
-            if (isDraw)
-            {
-                GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Blue, 1.0f, 0);
-                GraphicsDevice.SetRenderTarget(renderTarget);
-
-                GraphicsDevice.DepthStencilState = DepthStencilState.Default; // 깊이 버퍼 초기화
-                GraphicsDevice.DepthStencilState = new DepthStencilState
-                {
-                    DepthBufferEnable = true,  // 깊이 버퍼 사용
-                    StencilEnable = false
-                };
-
-                drawingVertices.Clear();
-
-                for (int i = 0; i < layers.Count; i++)
-                {
-                    if (layers[i].isDraw)
+                    drawingVertices.Clear();
+                    for (int j = 0; j < layers[i].triangleVertices.Count; j++)
                     {
-                        for(int j = 0; j < layers[i].triangleVertices.Count; j++)
-                        {
-                            double x = (double)layers[i].triangleVertices[j].Position.X * scale + (double)posOffset.X;
-                            double y = (double)layers[i].triangleVertices[j].Position.Y * scale + (double)posOffset.Y;
-                            drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, layers[i].triangleVertices[j].Position.Z), layers[i].triangleVertices[j].Color));
-                        }
+                        double x = (double)layers[i].triangleVertices[j].Position.X * scale + (double)posOffset.X;
+                        double y = (double)layers[i].triangleVertices[j].Position.Y * scale + (double)posOffset.Y;
+                        drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, 0), layers[i].triangleVertices[j].Color));
                     }
-                }
 
-                if (drawingVertices.Count > 0)
-                {
-                    spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+                    GraphicsDevice.Clear(Color.Black);
+                    GraphicsDevice.SetRenderTarget(renderTarget);
 
+                    spriteBatch.Begin();
                     foreach (var pass in basicEffect.CurrentTechnique.Passes)
                     {
                         pass.Apply();
@@ -186,22 +156,51 @@ namespace WinformMonoGame
                     }
                     spriteBatch.End();
 
+                    layers[i].texture = renderTarget;
+                    layers[i].texture = ApplyTransparency(layers[i].texture, GraphicsDevice, layers[i].foreColor, layers[i].transparency);
+                    GraphicsDevice.SetRenderTarget(null);
                 }
-
-                texture = renderTarget;
-                GraphicsDevice.SetRenderTarget(null);
             }
 
-            // 화면을 지우고 렌더 타겟에서 그린 텍스처를 출력합니다.
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Blue, 1.0f, 0);
+            GraphicsDevice.Clear(Color.Black);
 
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-
-            spriteBatch.Draw(texture, Vector2.Zero, Color.White);
-            //spriteBatch.Draw(polygonTexture, posOffset, null, Color.White, 0f, Vector2.Zero, new Vector2((float)drawScale, (float)drawScale), SpriteEffects.None, 0f);
+            spriteBatch.Begin();
+            for(int i = 0; i < layers.Count; i++)
+            {
+                if (layers[i].isDraw)
+                {
+                    //spriteBatch.Draw(layers[i].texture, Vector2.Zero, Color.White);
+                    //spriteBatch.Draw(layers[i].texture, new Vector2(i * 100, i * 100), null, Color.White, 0f, Vector2.Zero, Vector2.One, SpriteEffects.None, (float)(i / layers.Count));
+                    spriteBatch.Draw(layers[i].texture, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, Vector2.One, SpriteEffects.None, (float)(i / layers.Count));
+                }
+            }
             spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        Texture2D ApplyTransparency(Texture2D originalTexture, GraphicsDevice graphicsDevice, Color fore, int transparency)
+        {
+            Texture2D newTexture = new Texture2D(graphicsDevice, originalTexture.Width, originalTexture.Height);
+            Color[] pixelData = new Color[originalTexture.Width * originalTexture.Height];
+
+            originalTexture.GetData(pixelData);
+
+            for (int i = 0; i < pixelData.Length; i++)
+            {
+                if(pixelData[i].R == fore.R && pixelData[i].G == fore.G && pixelData[i].B == fore.B)
+                {
+                    pixelData[i] = new Color(fore, transparency);
+                }
+                else
+                {
+                    pixelData[i] = new Color(0, 0, 0, 0);
+                }
+            }
+
+            newTexture.SetData(pixelData);
+
+            return newTexture;
         }
 
         private List<PolygonPoint> RealToScreen(List<PolygonPoint> points)
@@ -216,11 +215,6 @@ namespace WinformMonoGame
             }
 
             return ret;
-        }
-
-        public void BtnClicked()
-        {
-            needUpdate = true;
         }
 
         /// <summary>

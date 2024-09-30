@@ -16,7 +16,8 @@ namespace WinformMonoGame
 {
     public partial class Form1 : Form
     {
-        private int checkBoxCnt = 1;
+        private int layerCnt = 1;
+        private Random random = new Random();
 
         private Game1 gameObject;
         public Form1()
@@ -55,6 +56,11 @@ namespace WinformMonoGame
                 Layer_Points layer_points = new Layer_Points();
                 layer_points.Read(selectedFolder);
                 LayerInfo layer = new LayerInfo();
+                Microsoft.Xna.Framework.Color foreColor = new Microsoft.Xna.Framework.Color(
+                    random.Next(1, 256),
+                    random.Next(1, 256),
+                    random.Next(1, 256)
+                );
 
                 for (int i = 0; i < layer_points.point_index.Count; i++)
                 {
@@ -80,25 +86,24 @@ namespace WinformMonoGame
 
                     var polyline = new Polygon(points);
                     P2T.Triangulate(polyline);
-
                     Microsoft.Xna.Framework.Color gray;
-                    float Z;
+                    layer.foreColor = foreColor;
+                    layer.texture = new Texture2D(gameObject.GraphicsDevice, gameObject.GraphicsDevice.Viewport.Width, gameObject.GraphicsDevice.Viewport.Height);
+
                     if (layer_points.point_index[i].polarity == 'P')
                     {
-                        gray = Microsoft.Xna.Framework.Color.White;
-                        Z = 0.0f;
+                        gray = foreColor;
                     }
                     else
                     {
-                        gray = Microsoft.Xna.Framework.Color.Red;
-                        Z = 0.0f;
+                        gray = new Microsoft.Xna.Framework.Color(0, 0, 0);
                     }
 
                     foreach (var triangle in polyline.Triangles)
                     {
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[2].X, (float)-triangle.Points[2].Y, Z), gray));
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[1].X, (float)-triangle.Points[1].Y, Z), gray));
-                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[0].X, (float)-triangle.Points[0].Y, Z), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[2].X, (float)-triangle.Points[2].Y, 0), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[1].X, (float)-triangle.Points[1].Y, 0), gray));
+                        layer.triangleVertices.Add(new VertexPositionColor(new Vector3((float)triangle.Points[0].X, (float)-triangle.Points[0].Y, 0), gray));
                     }
                 }
 
@@ -106,14 +111,24 @@ namespace WinformMonoGame
 
                 CheckBox chkBox = new CheckBox
                 {
-                    Text = $"Layer {checkBoxCnt}",
+                    Text = $"Layer {layerCnt}",
                     AutoSize = true,
-                    Location = new System.Drawing.Point(20, (checkBoxCnt * 30) + 20)
+                    Location = new System.Drawing.Point(20, this.button1.Location.Y + ((layerCnt-1) * 40) + 50)
                 };
-
-                checkBoxCnt++;
                 chkBox.CheckedChanged += new EventHandler(CheckBox_CheckedChanged);
                 this.Controls.Add(chkBox);
+
+                TrackBar layerTrackBar = new TrackBar();
+                layerTrackBar.Text = $"Layer {layerCnt}";
+                layerTrackBar.Location = new System.Drawing.Point(100, chkBox.Location.Y);
+                layerTrackBar.Minimum = 0;
+                layerTrackBar.Maximum = 255;
+                layerTrackBar.Value = 255;
+                layerTrackBar.TickFrequency = 10;
+                layerTrackBar.Scroll += new EventHandler(LayerTrackBar_Scroll);
+                this.Controls.Add(layerTrackBar);
+
+                layerCnt++;
             }
         }
 
@@ -127,13 +142,27 @@ namespace WinformMonoGame
                 if (chkBox.Checked)
                 {
                     gameObject.layers[num - 1].isDraw = true;
-                    gameObject.needUpdate = true;
                 }
                 else
                 {
                     gameObject.layers[num - 1].isDraw = false;
                 }
             }
+        }
+
+        private void LayerTrackBar_Scroll(object sender, EventArgs e)
+        {
+            TrackBar trackBar = sender as TrackBar;
+
+            if (trackBar != null)
+            {
+                int num = int.Parse(trackBar.Text.Split(' ')[1]);
+                gameObject.layers[num - 1].transparency = trackBar.Value;
+            }
+
+            //int layerIndex = layerTrackBars.IndexOf(trackBar);
+            //float transparency = trackBar.Value / 100f;
+            //game.SetLayerTransparency(layerIndex, transparency);
         }
 
         private void PictureBox1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
