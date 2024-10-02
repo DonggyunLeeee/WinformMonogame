@@ -178,14 +178,12 @@ namespace WinformMonoGame
         private void PictureBox1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             gameObject.mouse_delta = e.Delta;
-            gameObject.mouse_X = e.X;
-            gameObject.mouse_Y = e.Y;
+            gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
         }
 
         private void PictureBox1_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            gameObject.mouse_X = e.Location.X;
-            gameObject.mouse_Y = e.Location.Y;
+            gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
             
             if (e.Button == MouseButtons.Left)
             {
@@ -269,6 +267,11 @@ namespace WinformMonoGame
                             break;
                     }
                 }
+                else
+                {
+                    gameObject.isDragging = true;
+                    gameObject.prevmousePosition = new Vector2(e.Location.X, e.Location.Y);
+                }
             }
             else if (e.Button == MouseButtons.Right)
             {
@@ -296,18 +299,34 @@ namespace WinformMonoGame
 
         private void PictureBox1_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            gameObject.mouse_X = e.X;
-            gameObject.mouse_Y = e.Y;
+            gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
 
             if (e.Button == MouseButtons.Left)
             {
+                if (drawType != DrawShapeType.LIMIT)
+                {
+                    switch (drawType)
+                    {
+                        case DrawShapeType.RECTANGLE:
+                            break;
+                        case DrawShapeType.CIRCLE:
+                            break;
+                        case DrawShapeType.POLYGON:
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    gameObject.isDragging = false;
+                }
             }
         }
 
         private void PictureBox1_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            gameObject.mouse_X = e.X;
-            gameObject.mouse_Y = e.Y;
+            gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
 
             if (e.Button == MouseButtons.Left)
             {

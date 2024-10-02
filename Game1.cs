@@ -94,18 +94,16 @@ namespace WinformMonoGame
         private SpriteBatch spriteBatch;
         public RenderTarget2D renderTarget;
 
-        private Vector2 posOffset;
-        private double scale = 0.1;
-        private bool isDragging = false;
-        private Vector2 prevmousePosition;
-
         public List<LayerInfo> layers;
 
         private List<VertexPositionColor> drawingVertices;
 
+        private Vector2 posOffset;
+        private double scale = 0.1;
+        public bool isDragging = false;
+        public Vector2 prevmousePosition = new Vector2(0, 0);
         public int mouse_delta = 0;
-        public int mouse_X = 0;
-        public int mouse_Y = 0;
+        public Vector2 mouse_position = new Vector2(0, 0);
 
         public Game1()
         {
@@ -155,7 +153,7 @@ namespace WinformMonoGame
             if (Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
                 Exit();
 
-            Vector2 mousePosition = new Vector2(mouse_X, mouse_Y);
+            Vector2 mousePosition = mouse_position;
 
             if (mouse_delta != 0)
             {
@@ -166,16 +164,11 @@ namespace WinformMonoGame
                 mouse_delta = 0;
             }
 
-            //if (mouse_move && mouse_left_clicked)
-            //{
-            //    posOffset += (mousePosition - prevmousePosition);
-            //    prevmousePosition = mousePosition;
-            //}
-            //else if (mouse_left_clicked)
-            //{
-            //    prevmousePosition = mousePosition;
-            //}
-
+            if (isDragging)
+            {
+                posOffset += (mousePosition - prevmousePosition);
+                prevmousePosition = mousePosition;
+            }
 
             //if (currentMouseState.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released)
             //{
