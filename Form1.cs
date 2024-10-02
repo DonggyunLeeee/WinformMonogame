@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -18,6 +19,10 @@ namespace WinformMonoGame
     {
         private int layerCnt = 1;
         private Random random = new Random();
+        private DrawShapeType drawType = DrawShapeType.LIMIT;
+        private bool isDrawing = false;
+        private int curThickness = 1;
+        private Microsoft.Xna.Framework.Color curColor = new Microsoft.Xna.Framework.Color(255, 255, 255, 255);
 
         private Game1 gameObject;
         public Form1()
@@ -33,6 +38,8 @@ namespace WinformMonoGame
         public void SetGameObject(Game1 game)
         {
             gameObject = game;
+            gameObject.graphics.PreferredBackBufferWidth = pictureBox1.Width;
+            gameObject.graphics.PreferredBackBufferHeight = pictureBox1.Height;
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -54,7 +61,10 @@ namespace WinformMonoGame
             {
                 string selectedFolder = folderBrowserDialog.SelectedPath;
                 Layer_Points layer_points = new Layer_Points();
-                layer_points.Read(selectedFolder);
+                if (!layer_points.Read(selectedFolder))
+                {
+                    return;
+                }
                 LayerInfo layer = new LayerInfo();
                 Microsoft.Xna.Framework.Color foreColor = new Microsoft.Xna.Framework.Color(
                     random.Next(1, 256),
@@ -141,11 +151,11 @@ namespace WinformMonoGame
                 int num = int.Parse(chkBox.Text.Split(' ')[1]);
                 if (chkBox.Checked)
                 {
-                    gameObject.layers[num - 1].isDraw = true;
+                    gameObject.layers[num].isDraw = true;
                 }
                 else
                 {
-                    gameObject.layers[num - 1].isDraw = false;
+                    gameObject.layers[num].isDraw = false;
                 }
             }
         }
@@ -157,7 +167,7 @@ namespace WinformMonoGame
             if (trackBar != null)
             {
                 int num = int.Parse(trackBar.Text.Split(' ')[1]);
-                gameObject.layers[num - 1].transparency = trackBar.Value;
+                gameObject.layers[num].transparency = trackBar.Value;
             }
 
             //int layerIndex = layerTrackBars.IndexOf(trackBar);
@@ -174,12 +184,113 @@ namespace WinformMonoGame
 
         private void PictureBox1_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            gameObject.mouse_X = e.X;
-            gameObject.mouse_Y = e.Y;
+            gameObject.mouse_X = e.Location.X;
+            gameObject.mouse_Y = e.Location.Y;
             
             if (e.Button == MouseButtons.Left)
             {
-                gameObject.mouse_left_clicked = true;
+                if (drawType != DrawShapeType.LIMIT)
+                {
+                    if (!isDrawing)
+                    {
+                        isDrawing = true;
+                        gameObject.layers[0].shapes.Add(new ShapeInfo());
+                    }
+
+                    switch (drawType)
+                    {
+                        case DrawShapeType.RECTANGLE:
+                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
+
+                            if (gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count == 2)
+                            {
+                                ShapeInfo shape = gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1];
+                                Vector2 start = shape.points[0];
+                                Vector2 end = shape.points[1];
+
+                                Vector2 leftTop = new Vector2();
+                                Vector2 leftBottom = new Vector2();
+                                Vector2 rightBottom = new Vector2();
+                                Vector2 rightTop = new Vector2();
+
+                                leftTop.X = start.X < end.X ? start.X : end.X;
+                                leftTop.Y = start.Y < end.Y ? start.Y : end.Y;
+                                leftBottom.X = start.X < end.X ? start.X : end.X;
+                                leftBottom.Y = start.Y > end.Y ? start.Y : end.Y;
+                                rightBottom.X = start.X > end.X ? start.X : end.X;
+                                rightBottom.Y = start.Y > end.Y ? start.Y : end.Y;
+                                rightTop.X = start.X > end.X ? start.X : end.X;
+                                rightTop.Y = start.Y < end.Y ? start.Y : end.Y;
+
+                                shape.points.Clear();
+
+                                shape.points.Add(leftTop);
+                                shape.points.Add(leftBottom);
+                                shape.points.Add(rightBottom);
+                                shape.points.Add(rightTop);
+                                shape.points.Add(leftTop);
+
+                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1] = shape;
+                                isDrawing = false;
+                            }
+                            break;
+                        case DrawShapeType.CIRCLE:
+                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
+
+                            if(gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count == 2)
+                            {
+                                int segments = 100;
+                                ShapeInfo shape = gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1];
+                                Vector2 start = shape.points[0];
+                                Vector2 end = shape.points[1];
+                                Vector2 point = new Vector2();
+                                Vector2 center = (start + end) / 2;
+                                float radius = ((end - start).Length()) / 2;
+                                float increment = MathHelper.TwoPi / segments;
+                                float angle = 0f;
+
+                                shape.points.Clear();
+
+                                for (int i = 0; i < segments; i++)
+                                {
+                                    point = center + radius * new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
+                                    angle += increment;
+                                    shape.points.Add(point);
+                                }
+                                shape.points.Add(shape.points[0]);
+                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1] = shape;
+                                isDrawing = false;
+                            }
+                            break;
+                        case DrawShapeType.POLYGON:
+                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                if (drawType != DrawShapeType.LIMIT)
+                {
+                    switch (drawType)
+                    {
+                        case DrawShapeType.RECTANGLE:
+                            break;
+                        case DrawShapeType.CIRCLE:
+                            break;
+                        case DrawShapeType.POLYGON:
+                            if(isDrawing && gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count > 1)
+                            {
+                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points[0]);
+                                isDrawing = false;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
         }
 
@@ -190,8 +301,6 @@ namespace WinformMonoGame
 
             if (e.Button == MouseButtons.Left)
             {
-                gameObject.mouse_left_clicked = false;
-                gameObject.mouse_move = false;
             }
         }
 
@@ -202,8 +311,62 @@ namespace WinformMonoGame
 
             if (e.Button == MouseButtons.Left)
             {
-                gameObject.mouse_move = true;
             }
         }
+
+        private void toolStripButton_Click(object sender, EventArgs e, int index)
+        {
+            const int buttonNum = 3;
+            ToolStripButton toolStripButton = sender as ToolStripButton;
+
+            if (toolStripButton.Checked)
+            {
+                toolStripButton.Checked = !toolStripButton.Checked;
+                drawType = DrawShapeType.LIMIT;
+            }
+            else
+            {
+                for (int i = 0; i < buttonNum; i++) 
+                {
+                    if(index == i + 1)
+                    {
+                        toolStripButton.Checked = true;
+                    }
+                    else
+                    {
+                        ToolStripButton tmp = (ToolStripButton)this.toolStrip1.Items[i];
+                        tmp.Checked = false;
+                    }
+                }
+            }
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            drawType = DrawShapeType.RECTANGLE;
+            toolStripButton_Click(sender, e, 1);
+            isDrawing = false;
+        }
+
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            drawType = DrawShapeType.CIRCLE;
+            toolStripButton_Click(sender, e, 2);
+            isDrawing = false;
+        }
+
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            drawType = DrawShapeType.POLYGON;
+            toolStripButton_Click(sender, e, 3);
+            isDrawing = false;
+        }
+
+        private void ToolStripComboBox1_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            string number = new string(this.toolStripComboBox1.SelectedItem.ToString().Where(char.IsDigit).ToArray());
+            curThickness = int.Parse(number);
+        }
+
     }
 }

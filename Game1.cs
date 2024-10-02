@@ -12,6 +12,35 @@ using System.Linq;
 
 namespace WinformMonoGame
 {
+    public enum DrawShapeType
+    {
+        RECTANGLE,
+        CIRCLE,
+        POLYGON,
+        LIMIT
+    }
+
+    public class ShapeInfo
+    {
+        public List<Vector2> points;
+        public Color color;
+        public float thickness;
+
+        public ShapeInfo()
+        {
+            points = new List<Vector2>();
+            color = new Color(255, 255, 255, 255);
+            thickness = 1.0f;
+        }
+
+        public ShapeInfo(Color _color, int _thickness)
+        {
+            points = new List<Vector2>();
+            color = _color;
+            thickness = _thickness;
+        }
+    }
+
     public class LayerInfo
     {
         public List<VertexPositionColor> triangleVertices;
@@ -19,17 +48,47 @@ namespace WinformMonoGame
         public Color foreColor;
         public Texture2D texture;
         public int transparency;
+        public List<ShapeInfo> shapes;
 
         public LayerInfo()
         {
             triangleVertices = new List<VertexPositionColor>();
             isDraw = false;
+            shapes = new List<ShapeInfo>();
+        }
+
+        public void DrawShape(SpriteBatch spriteBatch)
+        {
+            texture.SetData(new[] { Color.White });
+            for (int i = 0; i < shapes.Count; i++)
+            {
+                if(shapes[i].points.Count > 1)
+                {
+                    for(int j = 1; j < shapes[i].points.Count; j++)
+                    {
+                        Vector2 start = shapes[i].points[j - 1];
+                        Vector2 end = shapes[i].points[j];
+                        Vector2 edge = end - start;
+                        float angle = (float)Math.Atan2(edge.Y, edge.X);
+                        float length = edge.Length();
+
+                        spriteBatch.Draw(texture,
+                            new Rectangle((int)start.X, (int)start.Y, (int)length, (int)shapes[i].thickness),
+                            null,
+                            shapes[i].color,
+                            angle,
+                            Vector2.Zero,
+                            SpriteEffects.None,
+                            0);
+                    }
+                }
+            }
         }
     }
 
     public class Game1 : Game
     {
-        private GraphicsDeviceManager graphics;
+        public GraphicsDeviceManager graphics;
         private IntPtr drawSurface;
         private BasicEffect basicEffect;
         private SpriteBatch spriteBatch;
@@ -47,8 +106,6 @@ namespace WinformMonoGame
         public int mouse_delta = 0;
         public int mouse_X = 0;
         public int mouse_Y = 0;
-        public bool mouse_left_clicked = false;
-        public bool mouse_move = false;
 
         public Game1()
         {
@@ -69,8 +126,11 @@ namespace WinformMonoGame
             base.Initialize();
 
             drawingVertices = new List<VertexPositionColor>();
-            posOffset = Vector2.Zero; // 폴리곤의 위치
+            posOffset = Vector2.Zero;
             layers = new List<LayerInfo>();
+            // for draw primitives
+            layers.Add(new LayerInfo());
+            layers[0].texture = new Texture2D(GraphicsDevice, 1, 1);
         }
 
         protected override void LoadContent()
@@ -79,15 +139,15 @@ namespace WinformMonoGame
             basicEffect.VertexColorEnabled = true;
 
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            //renderTarget = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            renderTarget = new RenderTarget2D(
-                GraphicsDevice,
-                Window.ClientBounds.Width, // 원하는 너비
-                Window.ClientBounds.Height, // 원하는 높이
-                false, // mipMap 사용 여부
-                SurfaceFormat.Color,
-                DepthFormat.Depth24 // 깊이 버퍼 형식
-            );
+            renderTarget = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            //renderTarget = new RenderTarget2D(
+            //    GraphicsDevice,
+            //    Window.ClientBounds.Width,
+            //    Window.ClientBounds.Height,
+            //    false,
+            //    SurfaceFormat.Color,
+            //    DepthFormat.Depth24
+            //);
         }
 
         protected override void Update(GameTime gameTime)
@@ -116,6 +176,23 @@ namespace WinformMonoGame
             //    prevmousePosition = mousePosition;
             //}
 
+
+            //if (currentMouseState.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released)
+            //{
+            //    // 마우스 클릭 시작 지점 저장
+            //    startPoint = new Vector2(currentMouseState.X, currentMouseState.Y);
+            //}
+            //else if (currentMouseState.LeftButton == ButtonState.Pressed)
+            //{
+            //    // 마우스 드래그 중일 때 종료 지점 설정
+            //    endPoint = new Vector2(currentMouseState.X, currentMouseState.Y);
+            //}
+            //else if (currentMouseState.LeftButton == ButtonState.Released && previousMouseState.LeftButton == ButtonState.Pressed)
+            //{
+            //    // 마우스 버튼을 놓았을 때 도형 그리기 완료
+            //    // 예: 원, 사각형 또는 다각형 그리기
+            //}
+
             base.Update(gameTime);
         }
 
@@ -133,7 +210,9 @@ namespace WinformMonoGame
             //stopwatch.Stop();
             //System.Windows.Forms.MessageBox.Show($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
 
-            for (int i = 0; i < layers.Count; i++)
+            GraphicsDevice.Clear(Color.Black);
+
+            for (int i = 1; i < layers.Count; i++)
             {
                 if (layers[i].isDraw)
                 {
@@ -145,7 +224,6 @@ namespace WinformMonoGame
                         drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, 0), layers[i].triangleVertices[j].Color));
                     }
 
-                    GraphicsDevice.Clear(Color.Black);
                     GraphicsDevice.SetRenderTarget(renderTarget);
 
                     spriteBatch.Begin();
@@ -162,10 +240,17 @@ namespace WinformMonoGame
                 }
             }
 
-            GraphicsDevice.Clear(Color.Black);
-
             spriteBatch.Begin();
-            for(int i = 0; i < layers.Count; i++)
+            
+            if (layers[0].shapes.Count > 0)
+            {
+                //GraphicsDevice.SetRenderTarget(renderTarget);
+                layers[0].DrawShape(spriteBatch);
+                //layers[0].texture = renderTarget;
+                //GraphicsDevice.SetRenderTarget(null);
+            }
+
+            for (int i = 0; i < layers.Count; i++)
             {
                 if (layers[i].isDraw)
                 {
@@ -216,6 +301,21 @@ namespace WinformMonoGame
 
             return ret;
         }
+
+        //public void DrawRectangle(Texture2D texture, Rectangle rectangle, Color color, float thickness)
+        //{
+        //    Vector2 topLeft = new Vector2(rectangle.Left, rectangle.Top);
+        //    Vector2 topRight = new Vector2(rectangle.Right, rectangle.Top);
+        //    Vector2 bottomLeft = new Vector2(rectangle.Left, rectangle.Bottom);
+        //    Vector2 bottomRight = new Vector2(rectangle.Right, rectangle.Bottom);
+
+        //    DrawLine(texture, topLeft, topRight, color, thickness);
+        //    DrawLine(texture, topRight, bottomRight, color, thickness);
+        //    DrawLine(texture, bottomRight, bottomLeft, color, thickness);
+        //    DrawLine(texture, bottomLeft, topLeft, color, thickness);
+        //}
+
+
 
         /// <summary>
         /// Event capturing the construction of a draw surface and makes sure this gets redirected to
