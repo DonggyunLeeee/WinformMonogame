@@ -92,7 +92,7 @@ namespace WinformMonoGame
         private IntPtr drawSurface;
         private BasicEffect basicEffect;
         private SpriteBatch spriteBatch;
-        RenderTarget2D renderTarget;
+        public RenderTarget2D renderTarget;
 
         private Vector2 posOffset;
         private double scale = 0.1;
@@ -121,6 +121,14 @@ namespace WinformMonoGame
             System.Windows.Forms.Control.FromHandle((this.Window.Handle)).VisibleChanged += new EventHandler(Game1_VisibleChanged);
         }
 
+        private void OnClientSizeChanged(object sender, System.EventArgs e)
+        {
+            // 윈도우 크기 변경 시 백버퍼 크기 조정
+            graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+            graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+            graphics.ApplyChanges();
+        }
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -140,14 +148,6 @@ namespace WinformMonoGame
 
             spriteBatch = new SpriteBatch(GraphicsDevice);
             renderTarget = new RenderTarget2D(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            //renderTarget = new RenderTarget2D(
-            //    GraphicsDevice,
-            //    Window.ClientBounds.Width,
-            //    Window.ClientBounds.Height,
-            //    false,
-            //    SurfaceFormat.Color,
-            //    DepthFormat.Depth24
-            //);
         }
 
         protected override void Update(GameTime gameTime)
@@ -199,11 +199,11 @@ namespace WinformMonoGame
         protected override void Draw(GameTime gameTime)
         {
             basicEffect.Projection = Matrix.CreateOrthographicOffCenter
-            (
-                0, GraphicsDevice.Viewport.Width,
-                GraphicsDevice.Viewport.Height, 0,
-                0, 1
-            );
+             (
+                 0, GraphicsDevice.Viewport.Width,
+                 GraphicsDevice.Viewport.Height, 0,
+                 0, 1
+             );
 
             //Stopwatch stopwatch = new Stopwatch();
             //stopwatch.Start();

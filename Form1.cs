@@ -194,7 +194,7 @@ namespace WinformMonoGame
                     if (!isDrawing)
                     {
                         isDrawing = true;
-                        gameObject.layers[0].shapes.Add(new ShapeInfo());
+                        gameObject.layers[0].shapes.Add(new ShapeInfo(curColor, curThickness));
                     }
 
                     switch (drawType)
@@ -368,5 +368,42 @@ namespace WinformMonoGame
             curThickness = int.Parse(number);
         }
 
+        private void ToolStripComboBox2_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            string str = this.toolStripComboBox2.SelectedItem.ToString();
+            switch (str)
+            {
+                case "White":
+                    curColor = Microsoft.Xna.Framework.Color.White;
+                    break;
+                case "Red":
+                    curColor = Microsoft.Xna.Framework.Color.Red;
+                    break;
+                case "Blue":
+                    curColor = Microsoft.Xna.Framework.Color.Blue;
+                    break;
+                case "Green":
+                    curColor = Microsoft.Xna.Framework.Color.Green;
+                    break;
+                case "Yellow":
+                    curColor = Microsoft.Xna.Framework.Color.Yellow;
+                    break;
+                case "User Defined":
+                    ColorDialog colorDialog = new ColorDialog();
+                    if (colorDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        curColor = new Microsoft.Xna.Framework.Color(colorDialog.Color.R, colorDialog.Color.G, colorDialog.Color.B, colorDialog.Color.A);
+                    }
+                    break;
+            }
+        }
+
+        private void pictureBox1_SizeChanged(object sender, EventArgs e)
+        {
+            gameObject.graphics.PreferredBackBufferWidth = pictureBox1.Width;
+            gameObject.graphics.PreferredBackBufferHeight = pictureBox1.Height;
+            gameObject.graphics.ApplyChanges();
+            gameObject.renderTarget = new RenderTarget2D(gameObject.GraphicsDevice, pictureBox1.Width, pictureBox1.Height);
+        }
     }
 }
