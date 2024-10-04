@@ -72,6 +72,9 @@ namespace WinformMonoGame
                     random.Next(1, 256)
                 );
 
+                layer.foreColor = foreColor;
+                layer.texture = new Texture2D(gameObject.GraphicsDevice, gameObject.GraphicsDevice.Viewport.Width, gameObject.GraphicsDevice.Viewport.Height);
+
                 for (int i = 0; i < layer_points.point_index.Count; i++)
                 {
                     int start_pos = layer_points.point_index[i].pos_start;
@@ -97,9 +100,7 @@ namespace WinformMonoGame
                     var polyline = new Polygon(points);
                     P2T.Triangulate(polyline);
                     Microsoft.Xna.Framework.Color gray;
-                    layer.foreColor = foreColor;
-                    layer.texture = new Texture2D(gameObject.GraphicsDevice, gameObject.GraphicsDevice.Viewport.Width, gameObject.GraphicsDevice.Viewport.Height);
-
+                    
                     if (layer_points.point_index[i].polarity == 'P')
                     {
                         gray = foreColor;
@@ -328,9 +329,7 @@ namespace WinformMonoGame
         {
             gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
 
-            if (e.Button == MouseButtons.Left)
-            {
-            }
+            this.label1.Text = $"X: {e.X}, Y: {e.Y}";
         }
 
         private void toolStripButton_Click(object sender, EventArgs e, int index)

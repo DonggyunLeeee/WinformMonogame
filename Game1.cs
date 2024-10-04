@@ -170,33 +170,17 @@ namespace WinformMonoGame
                 prevmousePosition = mousePosition;
             }
 
-            //if (currentMouseState.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released)
-            //{
-            //    // 마우스 클릭 시작 지점 저장
-            //    startPoint = new Vector2(currentMouseState.X, currentMouseState.Y);
-            //}
-            //else if (currentMouseState.LeftButton == ButtonState.Pressed)
-            //{
-            //    // 마우스 드래그 중일 때 종료 지점 설정
-            //    endPoint = new Vector2(currentMouseState.X, currentMouseState.Y);
-            //}
-            //else if (currentMouseState.LeftButton == ButtonState.Released && previousMouseState.LeftButton == ButtonState.Pressed)
-            //{
-            //    // 마우스 버튼을 놓았을 때 도형 그리기 완료
-            //    // 예: 원, 사각형 또는 다각형 그리기
-            //}
-
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
             basicEffect.Projection = Matrix.CreateOrthographicOffCenter
-             (
-                 0, GraphicsDevice.Viewport.Width,
-                 GraphicsDevice.Viewport.Height, 0,
-                 0, 1
-             );
+            (
+                0, GraphicsDevice.Viewport.Width,
+                GraphicsDevice.Viewport.Height, 0,
+                0, 1
+            );
 
             //Stopwatch stopwatch = new Stopwatch();
             //stopwatch.Start();
@@ -215,6 +199,7 @@ namespace WinformMonoGame
                         double x = (double)layers[i].triangleVertices[j].Position.X * scale + (double)posOffset.X;
                         double y = (double)layers[i].triangleVertices[j].Position.Y * scale + (double)posOffset.Y;
                         drawingVertices.Add(new VertexPositionColor(new Vector3((float)x, (float)y, 0), layers[i].triangleVertices[j].Color));
+                        //drawingVertices.Add(new VertexPositionColor(new Vector3((float)layers[i].triangleVertices[j].Position.X, (float)layers[i].triangleVertices[j].Position.Y, 0), layers[i].triangleVertices[j].Color));
                     }
 
                     GraphicsDevice.SetRenderTarget(renderTarget);
@@ -234,13 +219,9 @@ namespace WinformMonoGame
             }
 
             spriteBatch.Begin();
-            
             if (layers[0].shapes.Count > 0)
             {
-                //GraphicsDevice.SetRenderTarget(renderTarget);
                 layers[0].DrawShape(spriteBatch);
-                //layers[0].texture = renderTarget;
-                //GraphicsDevice.SetRenderTarget(null);
             }
 
             for (int i = 0; i < layers.Count; i++)
@@ -249,6 +230,7 @@ namespace WinformMonoGame
                 {
                     //spriteBatch.Draw(layers[i].texture, Vector2.Zero, Color.White);
                     //spriteBatch.Draw(layers[i].texture, new Vector2(i * 100, i * 100), null, Color.White, 0f, Vector2.Zero, Vector2.One, SpriteEffects.None, (float)(i / layers.Count));
+                    //spriteBatch.Draw(layers[i].texture, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, new Vector2((float)scale, (float)scale), SpriteEffects.None, (float)(i / layers.Count));
                     spriteBatch.Draw(layers[i].texture, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, Vector2.One, SpriteEffects.None, (float)(i / layers.Count));
                 }
             }
@@ -294,21 +276,6 @@ namespace WinformMonoGame
 
             return ret;
         }
-
-        //public void DrawRectangle(Texture2D texture, Rectangle rectangle, Color color, float thickness)
-        //{
-        //    Vector2 topLeft = new Vector2(rectangle.Left, rectangle.Top);
-        //    Vector2 topRight = new Vector2(rectangle.Right, rectangle.Top);
-        //    Vector2 bottomLeft = new Vector2(rectangle.Left, rectangle.Bottom);
-        //    Vector2 bottomRight = new Vector2(rectangle.Right, rectangle.Bottom);
-
-        //    DrawLine(texture, topLeft, topRight, color, thickness);
-        //    DrawLine(texture, topRight, bottomRight, color, thickness);
-        //    DrawLine(texture, bottomRight, bottomLeft, color, thickness);
-        //    DrawLine(texture, bottomLeft, topLeft, color, thickness);
-        //}
-
-
 
         /// <summary>
         /// Event capturing the construction of a draw surface and makes sure this gets redirected to
