@@ -9,6 +9,7 @@ using Poly2Tri.Triangulation.Polygon;
 using Test_Layer_Points;
 using System.Windows.Forms;
 using System.Linq;
+using SkiaSharp;
 
 namespace WinformMonoGame
 {
@@ -20,24 +21,66 @@ namespace WinformMonoGame
         LIMIT
     }
 
-    public class ShapeInfo
+    public class ShapePolygon
     {
         public List<Vector2> points;
+
+        public ShapePolygon()
+        {
+            points = new List<Vector2>();
+        }
+    }
+
+    public class ShapeCircle
+    {
+        public Vector2 leftTop;
+        public Vector2 center;
+        public float radius;
+
+        public ShapeCircle()
+        {
+            center = new Vector2();
+            leftTop = new Vector2();
+            radius = 0f;
+        }
+
+        public ShapeCircle(Vector2 _leftTop)
+        {
+            leftTop = _leftTop;
+        }
+    }
+
+    public class ShapeSquare
+    {
+        public Vector2 leftTop;
+        public float width;
+        public float height;
+
+        public ShapeSquare()
+        {
+            leftTop = new Vector2();
+            width = 0f;
+            height = 0f;
+        }
+
+        public ShapeSquare(Vector2 _leftTop)
+        {
+            leftTop = _leftTop;
+        }
+    }
+
+    public class ShapeInfo<T>
+    {
+        public T shape;
         public Color color;
         public float thickness;
+        public DrawShapeType drawType;
 
         public ShapeInfo()
         {
-            points = new List<Vector2>();
             color = new Color(255, 255, 255, 255);
             thickness = 1.0f;
-        }
-
-        public ShapeInfo(Color _color, int _thickness)
-        {
-            points = new List<Vector2>();
-            color = _color;
-            thickness = _thickness;
+            drawType = DrawShapeType.LIMIT;
         }
     }
 
@@ -48,40 +91,72 @@ namespace WinformMonoGame
         public Color foreColor;
         public Texture2D texture;
         public int transparency;
-        public List<ShapeInfo> shapes;
+        public List<ShapeInfo<object>> shapes;
 
         public LayerInfo()
         {
             triangleVertices = new List<VertexPositionColor>();
             isDraw = false;
-            shapes = new List<ShapeInfo>();
+            shapes = new List<ShapeInfo<object>>();
         }
 
-        public void DrawShape(SpriteBatch spriteBatch)
+        public ShapeInfo<object> GetLastShape()
         {
-            texture.SetData(new[] { Color.White });
-            for (int i = 0; i < shapes.Count; i++)
-            {
-                if(shapes[i].points.Count > 1)
-                {
-                    for(int j = 1; j < shapes[i].points.Count; j++)
-                    {
-                        Vector2 start = shapes[i].points[j - 1];
-                        Vector2 end = shapes[i].points[j];
-                        Vector2 edge = end - start;
-                        float angle = (float)Math.Atan2(edge.Y, edge.X);
-                        float length = edge.Length();
+            return shapes[shapes.Count - 1];
+        }
 
-                        spriteBatch.Draw(texture,
-                            new Rectangle((int)start.X, (int)start.Y, (int)length, (int)shapes[i].thickness),
-                            null,
-                            shapes[i].color,
-                            angle,
-                            Vector2.Zero,
-                            SpriteEffects.None,
-                            0);
+        public void DrawShape(GraphicsDevice graphicsDevice, SKSurface surface)
+        {
+            SKCanvas canvas = surface.Canvas;
+            canvas.Clear(SKColors.Black);
+            
+            using (var paint = new SKPaint())
+            {
+                for (int i = 0; i < shapes.Count; i++)
+                {
+                    if (shapes[i].drawType != DrawShapeType.LIMIT)
+                    {
+                        paint.Color = new SKColor(shapes[i].color.R, shapes[i].color.G, shapes[i].color.B, shapes[i].color.A);
+                        paint.StrokeWidth = shapes[i].thickness;
+                        paint.Style = SKPaintStyle.Stroke;
+
+                        switch (shapes[i].drawType)
+                        {
+                            case DrawShapeType.RECTANGLE:
+                                {
+                                    ShapeSquare shape = (ShapeSquare)shapes[i].shape;
+                                    canvas.DrawRect(shape.leftTop.X, shape.leftTop.Y, shape.width, shape.height, paint);
+                                }
+                                break;
+                            case DrawShapeType.CIRCLE:
+                                {
+                                    ShapeCircle shape = (ShapeCircle)shapes[i].shape;
+                                    canvas.DrawCircle(shape.center.X, shape.center.Y, shape.radius, paint);
+                                }
+                                break;
+                            case DrawShapeType.POLYGON:
+                                {
+                                    ShapePolygon shape = (ShapePolygon)shapes[i].shape;
+                                    for (int j = 1; j < shape.points.Count; j++)
+                                    {
+                                        Vector2 start = shape.points[j - 1];
+                                        Vector2 end = shape.points[j];
+                                        canvas.DrawLine(start.X, start.Y, end.X, end.Y, paint);
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
+            }
+
+            using (SKImage image = surface.Snapshot())
+            using (SKData data = image.Encode())
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream(data.ToArray()))
+            {
+                texture = Texture2D.FromStream(graphicsDevice, ms);
             }
         }
     }
@@ -93,6 +168,7 @@ namespace WinformMonoGame
         private BasicEffect basicEffect;
         private SpriteBatch spriteBatch;
         public RenderTarget2D renderTarget;
+        public SKSurface skSurface;
 
         public List<LayerInfo> layers;
 
@@ -119,14 +195,6 @@ namespace WinformMonoGame
             System.Windows.Forms.Control.FromHandle((this.Window.Handle)).VisibleChanged += new EventHandler(Game1_VisibleChanged);
         }
 
-        private void OnClientSizeChanged(object sender, System.EventArgs e)
-        {
-            // 윈도우 크기 변경 시 백버퍼 크기 조정
-            graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
-            graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
-            graphics.ApplyChanges();
-        }
-
         protected override void Initialize()
         {
             base.Initialize();
@@ -137,6 +205,7 @@ namespace WinformMonoGame
             // for draw primitives
             layers.Add(new LayerInfo());
             layers[0].texture = new Texture2D(GraphicsDevice, 1, 1);
+            skSurface = SKSurface.Create(new SKImageInfo(Window.ClientBounds.Width, Window.ClientBounds.Height));
         }
 
         protected override void LoadContent()
@@ -221,7 +290,8 @@ namespace WinformMonoGame
             spriteBatch.Begin();
             if (layers[0].shapes.Count > 0)
             {
-                layers[0].DrawShape(spriteBatch);
+                layers[0].DrawShape(GraphicsDevice, skSurface);
+                layers[0].isDraw = true;
             }
 
             for (int i = 0; i < layers.Count; i++)

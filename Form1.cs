@@ -12,6 +12,7 @@ using Poly2Tri;
 using Poly2Tri.Triangulation.Polygon;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
+using SkiaSharp;
 
 namespace WinformMonoGame
 {
@@ -170,10 +171,6 @@ namespace WinformMonoGame
                 int num = int.Parse(trackBar.Text.Split(' ')[1]);
                 gameObject.layers[num].transparency = trackBar.Value;
             }
-
-            //int layerIndex = layerTrackBars.IndexOf(trackBar);
-            //float transparency = trackBar.Value / 100f;
-            //game.SetLayerTransparency(layerIndex, transparency);
         }
 
         private void PictureBox1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -190,79 +187,76 @@ namespace WinformMonoGame
             {
                 if (drawType != DrawShapeType.LIMIT)
                 {
-                    if (!isDrawing)
-                    {
-                        isDrawing = true;
-                        gameObject.layers[0].shapes.Add(new ShapeInfo(curColor, curThickness));
-                    }
-
                     switch (drawType)
                     {
                         case DrawShapeType.RECTANGLE:
-                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
-
-                            if (gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count == 2)
+                            if (!isDrawing)
                             {
-                                ShapeInfo shape = gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1];
-                                Vector2 start = shape.points[0];
-                                Vector2 end = shape.points[1];
+                                ShapeInfo<object> shape = new ShapeInfo<object>();
+                                shape.color = new Microsoft.Xna.Framework.Color(curColor.R, curColor.G, curColor.B, (byte)50);
+                                shape.thickness = curThickness;
+                                shape.drawType = drawType;
+                                shape.shape = new ShapeSquare(new Vector2(e.Location.X, e.Location.Y));
+                                gameObject.layers[0].shapes.Add(shape);
+                                isDrawing = true;
+                            }
+                            else
+                            {
+                                ShapeSquare shape = (ShapeSquare)gameObject.layers[0].GetLastShape().shape;
+                                Vector2 start = shape.leftTop;
+                                Vector2 end = new Vector2(e.Location.X, e.Location.Y);
 
-                                Vector2 leftTop = new Vector2();
-                                Vector2 leftBottom = new Vector2();
-                                Vector2 rightBottom = new Vector2();
-                                Vector2 rightTop = new Vector2();
-
-                                leftTop.X = start.X < end.X ? start.X : end.X;
-                                leftTop.Y = start.Y < end.Y ? start.Y : end.Y;
-                                leftBottom.X = start.X < end.X ? start.X : end.X;
-                                leftBottom.Y = start.Y > end.Y ? start.Y : end.Y;
-                                rightBottom.X = start.X > end.X ? start.X : end.X;
-                                rightBottom.Y = start.Y > end.Y ? start.Y : end.Y;
-                                rightTop.X = start.X > end.X ? start.X : end.X;
-                                rightTop.Y = start.Y < end.Y ? start.Y : end.Y;
-
-                                shape.points.Clear();
-
-                                shape.points.Add(leftTop);
-                                shape.points.Add(leftBottom);
-                                shape.points.Add(rightBottom);
-                                shape.points.Add(rightTop);
-                                shape.points.Add(leftTop);
-
-                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1] = shape;
+                                shape.leftTop.X = start.X < end.X ? start.X : end.X;
+                                shape.leftTop.Y = start.Y < end.Y ? start.Y : end.Y;
+                                shape.width = Math.Abs(start.X - end.X);
+                                shape.height = Math.Abs(start.Y - end.Y);
+                                gameObject.layers[0].GetLastShape().color = curColor;
                                 isDrawing = false;
                             }
                             break;
                         case DrawShapeType.CIRCLE:
-                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
-
-                            if(gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count == 2)
+                            if (!isDrawing)
                             {
-                                int segments = 100;
-                                ShapeInfo shape = gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1];
-                                Vector2 start = shape.points[0];
-                                Vector2 end = shape.points[1];
-                                Vector2 point = new Vector2();
-                                Vector2 center = (start + end) / 2;
-                                float radius = ((end - start).Length()) / 2;
-                                float increment = MathHelper.TwoPi / segments;
-                                float angle = 0f;
+                                ShapeInfo<object> shape = new ShapeInfo<object>();
+                                shape.color = new Microsoft.Xna.Framework.Color(curColor.R, curColor.G, curColor.B, (byte)50);
+                                shape.thickness = curThickness;
+                                shape.drawType = drawType;
+                                shape.shape = new ShapeCircle(new Vector2(e.Location.X, e.Location.Y));
+                                gameObject.layers[0].shapes.Add(shape);
+                                isDrawing = true;
+                            }
+                            else
+                            {
+                                ShapeCircle shape = (ShapeCircle)gameObject.layers[0].GetLastShape().shape;
+                                Vector2 start = shape.leftTop;
+                                Vector2 end = new Vector2(e.Location.X, e.Location.Y);
 
-                                shape.points.Clear();
-
-                                for (int i = 0; i < segments; i++)
-                                {
-                                    point = center + radius * new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
-                                    angle += increment;
-                                    shape.points.Add(point);
-                                }
-                                shape.points.Add(shape.points[0]);
-                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1] = shape;
+                                shape.center = (end + start) / 2;
+                                shape.radius = ((end - start).Length()) / 2;
+                                gameObject.layers[0].GetLastShape().color = curColor;
                                 isDrawing = false;
                             }
                             break;
                         case DrawShapeType.POLYGON:
-                            gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(new Vector2(e.Location.X, e.Location.Y));
+                            {
+                                if (!isDrawing)
+                                {
+                                    ShapeInfo<object> shape = new ShapeInfo<object>();
+                                    shape.color = new Microsoft.Xna.Framework.Color(curColor.R, curColor.G, curColor.B, (byte)50);
+                                    shape.thickness = curThickness;
+                                    shape.drawType = drawType;
+                                    shape.shape = new ShapePolygon();
+                                    gameObject.layers[0].shapes.Add(shape);
+
+                                    ShapePolygon tmp = (ShapePolygon)gameObject.layers[0].GetLastShape().shape;
+                                    tmp.points.Add(new Vector2(e.Location.X, e.Location.Y));
+                                    tmp.points.Add(new Vector2(e.Location.X, e.Location.Y));
+                                    isDrawing = true;
+                                }
+                                ShapePolygon polygon = (ShapePolygon)gameObject.layers[0].GetLastShape().shape;
+                                polygon.points[polygon.points.Count - 1] = new Vector2(e.Location.X, e.Location.Y);
+                                polygon.points.Add(new Vector2(e.Location.X, e.Location.Y));
+                            }
                             break;
                         default:
                             break;
@@ -285,9 +279,11 @@ namespace WinformMonoGame
                         case DrawShapeType.CIRCLE:
                             break;
                         case DrawShapeType.POLYGON:
-                            if(isDrawing && gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Count > 1)
+                            ShapePolygon polygon = (ShapePolygon)gameObject.layers[0].GetLastShape().shape;
+                            gameObject.layers[0].GetLastShape().color = curColor;
+                            if (isDrawing && polygon.points.Count > 1)
                             {
-                                gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points.Add(gameObject.layers[0].shapes[gameObject.layers[0].shapes.Count - 1].points[0]);
+                                polygon.points[polygon.points.Count - 1] = new Vector2(polygon.points[0].X, polygon.points[0].Y);
                                 isDrawing = false;
                             }
                             break;
@@ -330,6 +326,41 @@ namespace WinformMonoGame
             gameObject.mouse_position = new Vector2(e.Location.X, e.Location.Y);
 
             this.label1.Text = $"X: {e.X}, Y: {e.Y}";
+
+            if (drawType != DrawShapeType.LIMIT && isDrawing)
+            {
+                switch (drawType)
+                {
+                    case DrawShapeType.RECTANGLE:
+                        {
+                            ShapeSquare shape = (ShapeSquare)gameObject.layers[0].GetLastShape().shape;
+                            Vector2 start = shape.leftTop;
+                            Vector2 end = new Vector2(e.Location.X, e.Location.Y);
+
+                            shape.width = (end.X - start.X);
+                            shape.height = (end.Y - start.Y);
+                        }
+                        break;
+                    case DrawShapeType.CIRCLE:
+                        {
+                            ShapeCircle shape = (ShapeCircle)gameObject.layers[0].GetLastShape().shape;
+                            Vector2 start = shape.leftTop;
+                            Vector2 end = new Vector2(e.Location.X, e.Location.Y);
+
+                            shape.center = (end + start) / 2;
+                            shape.radius = ((end - start).Length()) / 2;
+                        }
+                        break;
+                    case DrawShapeType.POLYGON:
+                        {
+                            ShapePolygon polygon = (ShapePolygon)gameObject.layers[0].GetLastShape().shape;
+                            polygon.points[polygon.points.Count - 1] = new Vector2(e.Location.X, e.Location.Y);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private void toolStripButton_Click(object sender, EventArgs e, int index)
@@ -422,6 +453,7 @@ namespace WinformMonoGame
             gameObject.graphics.PreferredBackBufferHeight = pictureBox1.Height;
             gameObject.graphics.ApplyChanges();
             gameObject.renderTarget = new RenderTarget2D(gameObject.GraphicsDevice, pictureBox1.Width, pictureBox1.Height);
+            gameObject.skSurface = SKSurface.Create(new SKImageInfo(pictureBox1.Width, pictureBox1.Height));
         }
     }
 }

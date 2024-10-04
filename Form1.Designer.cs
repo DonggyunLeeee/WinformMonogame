@@ -117,6 +117,7 @@ namespace WinformMonoGame
             // 
             // toolStripComboBox1
             // 
+            this.toolStripComboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.toolStripComboBox1.Items.AddRange(new object[] {
             "1 pix",
             "3 pix",
@@ -124,10 +125,12 @@ namespace WinformMonoGame
             this.toolStripComboBox1.Name = "toolStripComboBox1";
             this.toolStripComboBox1.Size = new System.Drawing.Size(75, 25);
             this.toolStripComboBox1.Text = "Thickness";
+            this.toolStripComboBox1.SelectedIndex = 0;
             this.toolStripComboBox1.SelectedIndexChanged += ToolStripComboBox1_SelectedIndexChanged;
             // 
             // toolStripComboBox2
             // 
+            this.toolStripComboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.toolStripComboBox2.Items.AddRange(new object[] {
             "White",
             "Red",
@@ -138,8 +141,8 @@ namespace WinformMonoGame
             this.toolStripComboBox2.Name = "toolStripComboBox2";
             this.toolStripComboBox2.Size = new System.Drawing.Size(75, 25);
             this.toolStripComboBox2.Text = "Color";
+            this.toolStripComboBox2.SelectedIndex = 0;
             this.toolStripComboBox2.SelectedIndexChanged += ToolStripComboBox2_SelectedIndexChanged;
-
             // 
             // label1
             // 
@@ -148,7 +151,7 @@ namespace WinformMonoGame
             this.label1.Location = new System.Drawing.Point(989, 13);
             this.label1.Margin = new System.Windows.Forms.Padding(0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(38, 12);
+            this.label1.Size = new System.Drawing.Size(57, 12);
             this.label1.TabIndex = 3;
             this.label1.Text = "X: 0, Y: 0";
             // 
