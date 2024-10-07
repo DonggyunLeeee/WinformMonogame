@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Poly2Tri;
 using Poly2Tri.Triangulation.Polygon;
-using Test_Layer_Points;
-using System.Windows.Forms;
-using System.Linq;
 using SkiaSharp;
+using System.Diagnostics;
 
 namespace WinformMonoGame
 {
@@ -44,7 +40,7 @@ namespace WinformMonoGame
             radius = 0f;
         }
 
-        public ShapeCircle(Vector2 _leftTop)
+        public ShapeCircle(Vector2 _leftTop) : this()
         {
             leftTop = _leftTop;
         }
@@ -63,7 +59,7 @@ namespace WinformMonoGame
             height = 0f;
         }
 
-        public ShapeSquare(Vector2 _leftTop)
+        public ShapeSquare(Vector2 _leftTop) : this()
         {
             leftTop = _leftTop;
         }
@@ -88,6 +84,7 @@ namespace WinformMonoGame
     {
         public List<VertexPositionColor> triangleVertices;
         public bool isDraw;
+        public bool needRedraw;
         public Color foreColor;
         public Texture2D texture;
         public int transparency;
@@ -97,6 +94,7 @@ namespace WinformMonoGame
         {
             triangleVertices = new List<VertexPositionColor>();
             isDraw = false;
+            needRedraw = true;
             shapes = new List<ShapeInfo<object>>();
         }
 
@@ -231,12 +229,28 @@ namespace WinformMonoGame
                 scale *= scaleChange;
                 posOffset = mousePosition - centerToMouse * (float)scaleChange;
                 mouse_delta = 0;
+
+                for(int i = 1; i < layers.Count; i++)
+                {
+                    if (layers[i].isDraw)
+                    {
+                        layers[i].needRedraw = true;
+                    }
+                }
             }
 
             if (isDragging)
             {
                 posOffset += (mousePosition - prevmousePosition);
                 prevmousePosition = mousePosition;
+
+                for (int i = 1; i < layers.Count; i++)
+                {
+                    if (layers[i].isDraw)
+                    {
+                        layers[i].needRedraw = true;
+                    }
+                }
             }
 
             base.Update(gameTime);
@@ -251,16 +265,11 @@ namespace WinformMonoGame
                 0, 1
             );
 
-            //Stopwatch stopwatch = new Stopwatch();
-            //stopwatch.Start();
-            //stopwatch.Stop();
-            //System.Windows.Forms.MessageBox.Show($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
-
             GraphicsDevice.Clear(Color.Black);
 
             for (int i = 1; i < layers.Count; i++)
             {
-                if (layers[i].isDraw)
+                if (layers[i].needRedraw)
                 {
                     drawingVertices.Clear();
                     for (int j = 0; j < layers[i].triangleVertices.Count; j++)
@@ -284,6 +293,7 @@ namespace WinformMonoGame
                     layers[i].texture = renderTarget;
                     layers[i].texture = ApplyTransparency(layers[i].texture, GraphicsDevice, layers[i].foreColor, layers[i].transparency);
                     GraphicsDevice.SetRenderTarget(null);
+                    layers[i].needRedraw = false;
                 }
             }
 
